@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KYC Learning Lab</title>
+<style>body{font:17px system-ui;background:#eff4fa;color:#16324f;margin:40px auto;max-width:900px;padding:20px}section{background:white;padding:28px;border-radius:12px;margin:20px 0}label{display:block;margin:15px 0}input,select,textarea,button{font:inherit;padding:9px}button{background:#164e83;color:white;border:0;border-radius:5px;cursor:pointer}li{margin:15px 0}small{display:block} [role=alert]{color:#a12626}</style></head>
+<body><h1>KYC Learning Lab</h1><p>Fictional customer due diligence workflow. Synthetic data only.</p>
+<section id="login"><h2>Analyst login</h2><small>Demo credentials: analyst@example.test / Learn123!</small><form id="login-form"><label>Email <input name="email" type="email" required></label><label>Password <input name="password" type="password" required></label><button>Sign in</button><p role="alert" id="login-error"></p></form></section>
+<section id="workspace" hidden><h2>Customer review workspace</h2><button id="logout">Sign out</button><h3>Create customer</h3><form id="customer-form"><label>Customer name <input name="customerName" required></label><label>Country <select name="country"><option>United Kingdom</option><option>India</option></select></label><button>Create customer</button></form><p role="status" id="message"></p><h3>Customers</h3><label>Search customers <input id="search" type="search"></label><ul id="customers"></ul></section>
+<section id="review" hidden><h2>Customer review</h2><p id="customer-details"></p><p>Screening status: <strong id="screening-status"></strong></p><button id="screen">Run demo screening</button><p>Review status: <strong id="review-status"></strong></p><form id="review-form"><label>Decision <select name="decision"><option>Approve</option><option>Escalate</option></select></label><label>Review notes <textarea name="notes" required></textarea></label><button>Save decision</button></form><p role="alert" id="review-error"></p><h3>Audit trail</h3><ul id="audit"></ul><button id="back">Back to customers</button></section>
+<script>
+// This is a teaching UI, not real authentication, screening, or a compliance engine.
+// sessionStorage gives each Playwright browser context its own records.
+const $ = id => document.getElementById(id);
+let records = JSON.parse(sessionStorage.getItem('customers') || '[]');
+let selected;
+const persist = () => sessionStorage.setItem('customers', JSON.stringify(records));
+function showWorkspace() { $('login').hidden=true; $('workspace').hidden=false; $('review').hidden=true; renderList(); }
+function renderList() {
+  $('customers').replaceChildren();
+  for (const c of records.filter(c=>c.name.toLowerCase().includes($('search').value.toLowerCase()))) {
+    const li=document.createElement('li'), b=document.createElement('button');
+    b.textContent=c.name; b.onclick=()=>openReview(c); li.append(b, document.createTextNode(' — '+c.status)); $('customers').append(li);
+  }
+}
+function openReview(c) { selected=c; $('workspace').hidden=true; $('review').hidden=false; $('customer-details').textContent=c.name+' / '+c.country; $('review-form').reset(); $('review-error').textContent=''; renderReview(); }
+function renderReview() {
+  $('screening-status').textContent=selected.screening; $('review-status').textContent=selected.status;
+  $('audit').replaceChildren(); for(const entry of selected.audit) {const li=document.createElement('li');li.textContent=entry;$('audit').append(li);}
+}
+$('login-form').onsubmit=e=>{e.preventDefault(); const data=new FormData(e.target);if(data.get('email')==='analyst@example.test'&&data.get('password')==='Learn123!'){sessionStorage.setItem('signedIn','yes');showWorkspace();}else{$('login-error').textContent='Invalid email or password';}};
+$('logout').onclick=()=>{sessionStorage.removeItem('signedIn');$('workspace').hidden=true;$('login').hidden=false;$('login-form').reset();};
+$('customer-form').onsubmit=e=>{e.preventDefault();const data=new FormData(e.target);const name=String(data.get('customerName')).trim();if(!name)return;records.push({name,country:data.get('country'),screening:'Not screened',status:'Pending review',audit:['Customer created']});persist();e.target.reset();$('message').textContent='Customer created';renderList();};
+$('search').oninput=renderList;
+$('screen').onclick=()=>{selected.screening=selected.name.toLowerCase().includes('match')?'Potential match':'Clear';selected.status='Pending review';selected.audit.push('Demo screening completed: '+selected.screening);persist();renderReview();};
+$('review-form').onsubmit=e=>{e.preventDefault();const data=new FormData(e.target),notes=String(data.get('notes')).trim();if(selected.screening==='Not screened'){$('review-error').textContent='Run screening before saving a decision';return;}if(!notes){$('review-error').textContent='Enter review notes';return;}if(selected.screening==='Potential match'&&data.get('decision')==='Approve'){$('review-error').textContent='Potential matches require escalation in this demo';return;}selected.status=data.get('decision')==='Approve'?'Approved':'Escalated';selected.audit.push(selected.status+': '+notes);persist();$('review-error').textContent='';renderReview();};
+$('back').onclick=showWorkspace;
+if(sessionStorage.getItem('signedIn')==='yes')showWorkspace();
+</script></body></html>
