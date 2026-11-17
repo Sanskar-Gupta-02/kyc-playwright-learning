@@ -21,47 +21,183 @@ You do not need to understand all the code at once. Read one lesson, try its ste
 | 11 | How do I investigate a failure? |
 | 12 | How do I write my own test? |
 
-## Lesson 1: What are we building?
+## Lesson 1: Understand the idea with a school library
 
-### What
+### Start with a story you already know
 
-We have two things:
+Imagine you want to borrow a book from your school library.
 
-1. A small pretend customer-review website in `demo/`.
-2. Tests that drive that website in `tests/`.
+The librarian does not immediately hand you a book. First, they check your library card. If everything is ready, they let you borrow it. If something needs another person's help, they ask the head librarian.
 
-The website is the thing being checked. Playwright is the helper checking it.
+We will use this story to understand the website before learning any code.
 
-KYC means “Know Your Customer.” In this learning project, an analyst creates a pretend customer, runs a pretend check, and records a decision. An analyst is simply the person doing the review.
+### Step 1: The librarian signs in
 
-### Why
+**What happens:** The librarian types their email and password into the library website.
 
-Suppose a developer changes the Save button and accidentally breaks customer approval. A repeatable test can help catch that mistake.
+**Why:** The website needs to know which staff member is using it.
 
-An automated test is a recipe with a check at the end:
+**How you know it worked:** The librarian's work screen appears.
 
-- Arrange: get the page and data ready.
-- Act: do something.
-- Assert: check what happened.
+In our demo, the staff member is called an **analyst**. Here, that just means “the person checking a customer's information.”
 
-An assertion is a question the computer must answer, such as “Does the status say Approved?”
+### Step 2: Add the person's details
 
-### How our demo behaves
+**What happens:** The librarian adds a student named Asha.
 
-| Situation | Demo result |
+**Why:** The website needs a record to work with, like a named page in a notebook.
+
+**How it works:** Type the name into a box and click a button to save it.
+
+In our demo, the person is called a **customer**. Creating a customer means adding a pretend person's details to the website.
+
+### Step 3: Check before deciding — this is the idea behind screening
+
+**What happens in the library story:** The librarian checks Asha's card to see whether anything needs attention before lending a book.
+
+**Why:** We want to check first and decide afterwards.
+
+The word **screening** means **running an initial check to see whether something needs a closer look**.
+
+In our demo, clicking **Run demo screening** tells the website to perform its pretend check.
+
+The library story is only a comparison to explain the order of work. Our website does not actually check library cards.
+
+### Step 4: Understand the result of the check
+
+Imagine the library computer says one of these:
+
+| Library message | Meaning in ordinary words | Label in our demo |
+| --- | --- | --- |
+| Nothing found that needs attention | This check did not raise a flag | Clear |
+| Something might need checking | Pause and take a closer look | Potential match |
+| Nobody has checked yet | The check has not happened | Not screened |
+
+A **potential match** means “there might be a connection worth checking.” It does not mean “this person has done something wrong.”
+
+Our demo uses a very simple pretend rule:
+
+- A name containing the word `match`, such as `Demo Match Customer`, gets **Potential match**.
+- A name without that word, such as `Asha Learning`, gets **Clear**.
+- Capital and lowercase letters are treated the same.
+
+**Why such a simple rule?** We can predict the answer while learning tests. No real records or outside service are searched.
+
+### Step 5: Make a decision — approve or escalate
+
+If the library check finds nothing needing attention, the librarian can say, “Yes, this is ready.”
+
+That is the idea behind **approve**: **record a yes decision**.
+
+If something needs more attention, the librarian can say, “I need the head librarian to look at this.”
+
+That is the idea behind **escalate**: **mark the matter as needing further review**.
+
+| Word on the website | Read it as |
 | --- | --- |
-| Correct demo email and password | Workspace opens |
-| Wrong password | Error appears |
-| Customer name contains “match,” ignoring letter case | Screening says Potential match |
-| Customer name does not contain “match” | Screening says Clear |
-| Try to decide before screening | Decision is blocked |
-| Try to approve a potential match | Decision is blocked |
-| Approve a clear customer with notes | Status becomes Approved |
-| Escalate a screened customer with notes | Status becomes Escalated |
+| Approve | Record a yes decision |
+| Approved | A yes decision has been saved |
+| Escalate | Mark this for further review |
+| Escalated | The need for further review has been saved |
+| Pending review | A final decision has not been recorded yet |
 
-These are made-up teaching rules. The demo does not contact a real screening service. “Clear” does not prove anything about a real person. The project illustrates patterns you can apply to KYC360; it does not reproduce KYC360's actual rules or internal code.
+In this small demo, escalation only changes the saved status and adds a note to the history. It does not send a message or assign a real person.
 
-**Check yourself:** What is the difference between clicking Save and checking that the status changed? Clicking is an action. Checking the result is an assertion. We need both.
+The demo blocks approval when its check says Potential match. You choose Escalate instead. This is a made-up learning rule, not a statement about how every real system works.
+
+### Step 6: Write down what happened — the audit trail
+
+Imagine the librarian keeps a notebook:
+
+1. Asha's record was created.
+2. The card was checked.
+3. The decision was recorded with a reason.
+
+That notebook is like an **audit trail**: **a history of actions**.
+
+In our demo, the audit trail for one completed review could say:
+
+```text
+Customer created
+Demo screening completed: Clear
+Approved: Reviewed synthetic evidence
+```
+
+“Reviewed synthetic evidence” is just the sample note used by the test. **Synthetic** means made up for practice.
+
+**Why keep a history?** Seeing the final answer is useful. Seeing how that answer was reached is useful too.
+
+### Now connect the story to the project
+
+We have two separate things:
+
+1. **The demo website:** the pretend workplace where a person can type, click, and save.
+2. **The Playwright tests:** instructions that make a browser do those things and check the answers.
+
+| In the story | In our project |
+| --- | --- |
+| Library website | The demo in `demo/` |
+| Librarian using the website | Analyst using the demo |
+| Student's record | Customer's record |
+| Checking before lending | Running demo screening |
+| Saying yes | Approving |
+| Asking for more review | Escalating |
+| Librarian's history notebook | Audit trail |
+| A helper following a checking checklist | Playwright running a test |
+
+KYC means **Know Your Customer**. You do not need to know the real business rules to learn this framework. For now, understand the journey: **add details, run a check, record a decision, check the history**.
+
+The examples illustrate a KYC-style journey. They do not reproduce KYC360's actual rules or internal code.
+
+### What does an automated test actually check?
+
+Suppose someone changes the website and accidentally breaks its Save button.
+
+A test can follow this recipe:
+
+| Part | Simple meaning | Example |
+| --- | --- | --- |
+| Arrange | Get things ready | Sign in and create Asha |
+| Act | Do the task | Run the check and save Approve with notes |
+| Assert | Check the answer | Confirm the status says Approved and the history includes the decision |
+
+An **assertion** is a check: “Did the website give the answer we expected?”
+
+Clicking Save is an action. Checking that Approved appears is an assertion.
+
+**Why do we need both?** The button might be clickable even when saving is broken.
+
+### Two practice journeys to remember
+
+**Journey A: Nothing needs extra attention**
+
+1. Create `Asha Learning`.
+2. Run demo screening.
+3. Check that the result says Clear.
+4. Choose Approve and enter notes.
+5. Save.
+6. Check that the status says Approved.
+7. Check that the audit trail includes the decision.
+
+**Journey B: Something needs another look**
+
+1. Create `Demo Match Customer`.
+2. Run demo screening.
+3. Check that the result says Potential match.
+4. Choose Escalate and enter notes.
+5. Save.
+6. Check that the status says Escalated.
+7. Check that the audit trail includes the decision.
+
+The later lessons use the website's real button names, so keep this word list handy.
+
+### Quick questions
+
+- **What does screening mean?** Run an initial check before deciding.
+- **Does a potential match prove something is wrong?** No. It flags something for a closer look.
+- **What does escalate mean here?** Save that further review is needed.
+- **What is an audit trail?** A history of what happened.
+- **What does Playwright do?** Controls the browser and checks expected results.
 
 ## Lesson 2: Meet the files and words
 
